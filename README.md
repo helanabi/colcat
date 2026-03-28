@@ -15,20 +15,23 @@ A tool that combines messy Excel/CSV files into a clean, unified sheet
 ## Usage
 
 ```
-usage: colcat [-h] [-m JSON] [-o OUTPUT] [-r] [-s] [-v] file [file ...]
+usage: colcat [-h] [-b] [-m JSON] [-n NAME] [-o OUTPUT] [-r] [-s] [-v]
+              file [file ...]
 
 cat(1) but for columns in Excel/CSV files
 
 positional arguments:
-  file                 input data files
+  file                  input data files
 
 options:
-  -h, --help           show this help message and exit
-  -m, --mapping JSON   JSON file mapping column names
-  -o, --output OUTPUT  output file name
-  -r, --summary        add a summary sheet
-  -s, --source         add a column for row source file
-  -v, --version        show program's version number and exit
+  -h, --help            show this help message and exit
+  -b, --verbose
+  -m, --mapping JSON    JSON file mapping column names
+  -n, --sheet-name NAME
+  -o, --output OUTPUT   output file name
+  -r, --summary         add a summary sheet
+  -s, --source          add a column for row source file
+  -v, --version         show program's version number and exit
 ```
 
 ## Column Mapping file
