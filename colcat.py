@@ -15,6 +15,7 @@ def parse_args():
         epilog=f"{VERSION} copyright (c) 2026 Hassan El anabi"
     )
     parser.add_argument("file", nargs='+', help="input data files")
+    parser.add_argument("-b", "--verbose", action="store_true")
     parser.add_argument("-m", "--mapping", metavar="JSON",
                         help="JSON file mapping column names")
     parser.add_argument("-o", "--output", default="output.xlsx",
@@ -43,7 +44,10 @@ def load_mapping(mapping_file):
         return name
     return normalize
 
-def load_file(filename, add_source):
+def load_file(filename, add_source, verbose):
+    if verbose:
+        print("Loading file:", filename, end=" ... ")
+
     if filename.endswith(".csv"):
         try:
             df = pd.read_csv(filename)
@@ -57,6 +61,9 @@ def load_file(filename, add_source):
     else:
         raise ValueError("Unsupported file type")
 
+    if verbose:
+        print("done")
+
     df.dropna(how="all", inplace=True)
     if add_source:
         rows, cols = df.shape
@@ -69,12 +76,17 @@ def main():
         if not any(filename.endswith(ext) for ext in (".csv", ".xlsx")):
             usage_error(f"unsupported file: {filename}")
 
+    def report(*status, **kwd):
+        if args.verbose:
+            print(*status, **kwd)
+
     if args.mapping:
         normalize = load_mapping(args.mapping)
+        report("Mapping file loaded")
     else:
         normalize = lambda name: name.strip().capitalize()
 
-    frames = tuple(load_file(f, args.source) for f in args.file)
+    frames = tuple(load_file(f, args.source, args.verbose) for f in args.file)
     for header in map(lambda df: df.columns.values, frames):
         for i, col in enumerate(header):
             header[i] = normalize(col)
@@ -83,7 +95,10 @@ def main():
     if not output.endswith(".xlsx"):
         output += ".xlsx"
 
+    report("Concatenating files", end=" ... ")
     df = pd.concat(frames, ignore_index=True)
+    report("done")
+
     if args.summary:
         row_stat = pd.DataFrame(
             zip(args.file,
@@ -95,6 +110,7 @@ def main():
             (("Total rows", df.shape[0]),)
         )
                                   
+    report("Writing to", output)
     with pd.ExcelWriter(output) as writer:
         df.to_excel(writer, index=False, engine="openpyxl")
         if args.summary:
