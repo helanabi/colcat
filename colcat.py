@@ -18,6 +18,7 @@ def parse_args():
     parser.add_argument("-b", "--verbose", action="store_true")
     parser.add_argument("-m", "--mapping", metavar="JSON",
                         help="JSON file mapping column names")
+    parser.add_argument("-n", "--sheet-name", metavar="NAME")
     parser.add_argument("-o", "--output", default="output.xlsx",
                         help="output file name")
     parser.add_argument("-r", "--summary", action="store_true",
@@ -109,22 +110,20 @@ def main():
         total_rows = pd.DataFrame.from_records(
             (("Total rows", df.shape[0]),)
         )
-                                  
+
     report("Writing to", output)
     with pd.ExcelWriter(output) as writer:
-        df.to_excel(writer, index=False, engine="openpyxl")
+        opts = {"index": False, "engine": "openpyxl"}
+        if args.sheet_name:
+            opts["sheet_name"] = args.sheet_name
+        df.to_excel(writer, **opts)
         if args.summary:
-            row_stat.to_excel(writer,
-                              sheet_name="Summary",
-                              index=False,
-                              engine="openpyxl")
-            
+            opts["sheet_name"] = "Summary"
+            row_stat.to_excel(writer, **opts)
             total_rows.to_excel(writer,
-                                sheet_name="Summary",
                                 header=False,
-                                index=False,
                                 startrow=len(frames) + 1,
-                                engine="openpyxl")
+                                **opts)
 
 def error(msg, code):
     print(str(msg), file=sys.stderr)
