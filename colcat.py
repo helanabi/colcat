@@ -18,6 +18,8 @@ def parse_args():
                         help="JSON file mapping column names")
     parser.add_argument("-o", "--output", default="output.xlsx",
                         help="output file name")
+    parser.add_argument("-s", "--source", action="store_true",
+                        help="add a column for row source file")
     parser.add_argument("-v", "--version", action="version", version=VERSION)
     return parser.error, parser.parse_args()
 
@@ -38,13 +40,18 @@ def load_mapping(mapping_file):
         return name
     return normalize
 
-def load_file(filename):
+def load_file(filename, add_source):
     if filename.endswith(".csv"):
-        return pd.read_csv(filename)
+        df = pd.read_csv(filename)
     elif filename.endswith(".xlsx"):
-        return pd.read_excel(filename, engine="openpyxl")
+        df =  pd.read_excel(filename, engine="openpyxl")
     else:
         raise ValueError("Unsupported file type")
+
+    if add_source:
+        rows, cols = df.shape
+        df.insert(cols, "Source", (filename,) * rows, allow_duplicates=True)
+    return df
 
 def main():
     usage_error, args = parse_args()
@@ -58,14 +65,14 @@ def main():
         normalize = lambda name: name.strip().capitalize()
 
     cols = []
-    frames = tuple(map(load_file, args.file))
+    frames = tuple(load_file(f, args.source) for f in args.file)
     for header in map(lambda df: df.columns.values, frames):
         for i, col in enumerate(header):
             normalized = normalize(col)
             header[i] = normalized
             if normalized not in cols:
                 cols.append(normalized)
-
+        
     output = args.output
     if not output.endswith(".xlsx"):
         output += ".xlsx"
