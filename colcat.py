@@ -86,8 +86,10 @@ def main():
     df = pd.concat(frames, ignore_index=True)
     if args.summary:
         row_stat = pd.DataFrame(
-            zip(args.file, (f.shape[0] for f in frames)),
-            columns=("File", "Row count")
+            zip(args.file,
+                (f.shape[0] for f in frames),
+                (','.join(f.columns) for f in frames)),
+            columns=("File", "Row Count", "Columns Present")
         )
         total_rows = pd.DataFrame.from_records(
             (("Total rows", df.shape[0]),)
