@@ -8,6 +8,16 @@ from zipfile import BadZipFile
 
 VERSION = "%(prog)s 0.1.0"
 
+ERROR_CODES = {
+    3: [FileNotFoundError, PermissionError],
+    4: [
+        UnicodeDecodeError,
+        pd.errors.EmptyDataError,
+        BadZipFile,
+        json.JSONDecodeError
+    ]
+}
+
 def parse_args():
     parser = argparse.ArgumentParser(
         prog="colcat",
@@ -28,6 +38,16 @@ def parse_args():
     parser.add_argument("-v", "--version", action="version", version=VERSION)
     return parser.error, parser.parse_args()
 
+def handle_errors(func):
+    def wrapped(filename, *args, **kwargs):
+        try:
+            return func(filename, *args, **kwargs)
+        except Exception as e:
+            e.add_note("An error occured while processing file: " + filename)
+            raise
+    return wrapped
+
+@handle_errors
 def load_mapping(mapping_file):
     with open(mapping_file) as f:
         mapping = json.load(f)
@@ -45,20 +65,15 @@ def load_mapping(mapping_file):
         return name
     return normalize
 
+@handle_errors
 def load_file(filename, add_source, verbose):
     if verbose:
         print("Loading file:", filename, end=" ... ")
 
     if filename.endswith(".csv"):
-        try:
-            df = pd.read_csv(filename)
-        except pd.errors.EmptyDataError as e:
-            error(f"{e}: {filename}", 4)
+        df = pd.read_csv(filename)
     elif filename.endswith(".xlsx"):
-        try:
-            df = pd.read_excel(filename, engine="openpyxl")
-        except BadZipFile as e:
-            error(f"Invalid Excel file: {filename}", 4)
+        df = pd.read_excel(filename, engine="openpyxl")
     else:
         raise ValueError("Unsupported file type")
 
@@ -112,30 +127,36 @@ def main():
         )
 
     report("Writing to", output)
-    with pd.ExcelWriter(output) as writer:
-        opts = {"index": False, "engine": "openpyxl"}
-        if args.sheet_name:
-            opts["sheet_name"] = args.sheet_name
-        df.to_excel(writer, **opts)
-        if args.summary:
-            opts["sheet_name"] = "Summary"
-            row_stat.to_excel(writer, **opts)
-            total_rows.to_excel(writer,
-                                header=False,
-                                startrow=len(frames) + 1,
-                                **opts)
+    try:
+        with pd.ExcelWriter(output) as writer:
+            opts = {"index": False, "engine": "openpyxl"}
+            if args.sheet_name:
+                opts["sheet_name"] = args.sheet_name
+            df.to_excel(writer, **opts)
+            if args.summary:
+                opts["sheet_name"] = "Summary"
+                row_stat.to_excel(writer, **opts)
+                total_rows.to_excel(writer,
+                                    header=False,
+                                    startrow=len(frames) + 1,
+                                    **opts)
+    except Exception as e:
+        e.add_note("Unable to write file: " + output)
+        raise
 
-def error(msg, code):
+def error(msg, code=None):
     print(str(msg), file=sys.stderr)
-    sys.exit(code)
+    if code is not None:
+        sys.exit(code)
 
 if __name__ == "__main__":
     try:
         main()
-    except (FileNotFoundError, PermissionError) as e:
-        error(e, 3)
-    except (json.JSONDecodeError,
-            UnicodeDecodeError) as e:
-        error(e, 4)
     except Exception as e:
-        error(e, 9)
+        if e.__notes__:
+            error('\n'.join(e.__notes__))
+        exit_code = 9
+        for code, exceptions in ERROR_CODES.items():
+            if any(isinstance(e, exception) for exception in exceptions):
+                exit_code = code
+        error(e, exit_code)
