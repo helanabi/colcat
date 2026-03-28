@@ -1,11 +1,21 @@
 ## Overview
 
-A tool that combines messy Excel/CSV files into a clean, unified table
+A tool that combines messy Excel/CSV files into a clean, unified sheet
+
+## Features
+
+- Takes an arbitrary number of Excel/CSV files
+- Automatic column alignment
+- Automatic schema union
+- Empty rows cleanup
+- Custom column mapping
+- Optional summary sheet
+- Optional source tracking column
 
 ## Usage
 
 ```
-usage: colcat [-h] [-m JSON] [-o OUTPUT] [-v] file [file ...]
+usage: colcat [-h] [-m JSON] [-o OUTPUT] [-r] [-s] [-v] file [file ...]
 
 cat(1) but for columns in Excel/CSV files
 
@@ -16,8 +26,9 @@ options:
   -h, --help           show this help message and exit
   -m, --mapping JSON   JSON file mapping column names
   -o, --output OUTPUT  output file name
+  -r, --summary        add a summary sheet
+  -s, --source         add a column for row source file
   -v, --version        show program's version number and exit
-
 ```
 
 ## Column Mapping file
@@ -47,3 +58,7 @@ order to perform a case-insensitive matching.
 - `3`: filesystem error
 - `4`: invalid input file
 - `9`: unknown error
+
+## LICENSE
+
+This project is licensed under the MIT License.
