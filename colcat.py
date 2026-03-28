@@ -48,6 +48,7 @@ def load_file(filename, add_source):
     else:
         raise ValueError("Unsupported file type")
 
+    df.dropna(how="all", inplace=True)
     if add_source:
         rows, cols = df.shape
         df.insert(cols, "Source", (filename,) * rows, allow_duplicates=True)
