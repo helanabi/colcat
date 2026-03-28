@@ -4,6 +4,7 @@ import argparse
 import json
 import sys
 import pandas as pd
+from zipfile import BadZipFile
 
 VERSION = "%(prog)s 0.1.0"
 
@@ -18,6 +19,8 @@ def parse_args():
                         help="JSON file mapping column names")
     parser.add_argument("-o", "--output", default="output.xlsx",
                         help="output file name")
+    parser.add_argument("-r", "--summary", action="store_true",
+                        help="add a summary sheet")
     parser.add_argument("-s", "--source", action="store_true",
                         help="add a column for row source file")
     parser.add_argument("-v", "--version", action="version", version=VERSION)
@@ -42,9 +45,15 @@ def load_mapping(mapping_file):
 
 def load_file(filename, add_source):
     if filename.endswith(".csv"):
-        df = pd.read_csv(filename)
+        try:
+            df = pd.read_csv(filename)
+        except pd.errors.EmptyDataError as e:
+            error(f"{e}: {filename}", 4)
     elif filename.endswith(".xlsx"):
-        df =  pd.read_excel(filename, engine="openpyxl")
+        try:
+            df = pd.read_excel(filename, engine="openpyxl")
+        except BadZipFile as e:
+            error(f"Invalid Excel file: {filename}", 4)
     else:
         raise ValueError("Unsupported file type")
 
@@ -65,19 +74,39 @@ def main():
     else:
         normalize = lambda name: name.strip().capitalize()
 
-    cols = []
     frames = tuple(load_file(f, args.source) for f in args.file)
     for header in map(lambda df: df.columns.values, frames):
         for i, col in enumerate(header):
-            normalized = normalize(col)
-            header[i] = normalized
-            if normalized not in cols:
-                cols.append(normalized)
-        
+            header[i] = normalize(col)
+
     output = args.output
     if not output.endswith(".xlsx"):
         output += ".xlsx"
-    pd.concat(frames, ignore_index=True).to_excel(output, index=False)
+
+    df = pd.concat(frames, ignore_index=True)
+    if args.summary:
+        row_stat = pd.DataFrame(
+            zip(args.file, (f.shape[0] for f in frames)),
+            columns=("File", "Row count")
+        )
+        total_rows = pd.DataFrame.from_records(
+            (("Total rows", df.shape[0]),)
+        )
+                                  
+    with pd.ExcelWriter(output) as writer:
+        df.to_excel(writer, index=False, engine="openpyxl")
+        if args.summary:
+            row_stat.to_excel(writer,
+                              sheet_name="Summary",
+                              index=False,
+                              engine="openpyxl")
+            
+            total_rows.to_excel(writer,
+                                sheet_name="Summary",
+                                header=False,
+                                index=False,
+                                startrow=len(frames) + 1,
+                                engine="openpyxl")
 
 def error(msg, code):
     print(str(msg), file=sys.stderr)
@@ -88,7 +117,8 @@ if __name__ == "__main__":
         main()
     except (FileNotFoundError, PermissionError) as e:
         error(e, 3)
-    except (json.JSONDecodeError, UnicodeDecodeError) as e:
+    except (json.JSONDecodeError,
+            UnicodeDecodeError) as e:
         error(e, 4)
     except Exception as e:
         error(e, 9)
