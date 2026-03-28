@@ -13,7 +13,8 @@ def parse_args():
         epilog=f"{VERSION} copyright (c) 2026 Hassan El anabi"
     )
     parser.add_argument("file", nargs='+', help="input data files")
-    parser.add_argument("-o", "--output", help="output file name")
+    parser.add_argument("-o", "--output", default="output.xlsx",
+                        help="output file name")
     parser.add_argument("-v", "--version", action="version", version=VERSION)
     return parser.error, parser.parse_args()
 
