@@ -2,6 +2,12 @@
 
 A tool that combines messy Excel/CSV files into a clean, unified sheet
 
+## Demo
+
+- `./colcat.py -m mapping.json sample_data/file*`
+
+![colcat demo gif](demo.gif)
+
 ## Features
 
 - Takes an arbitrary number of Excel/CSV files
