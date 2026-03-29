@@ -43,7 +43,7 @@ options:
 ## Column Mapping file
 
 A JSON file mapping column names can be specified in the command line using
-the `-o`/`--mapping` option. Valid mapping files must have the following format:
+the `-m`/`--mapping` option. Valid mapping files must have the following format:
 
 ```JSON
 {
