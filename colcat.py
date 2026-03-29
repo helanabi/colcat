@@ -65,8 +65,11 @@ def load_mapping(mapping_file):
         return name
     return normalize
 
-def has_ext(filename, extension):
-    return filename.lower().endswith('.' + extension)
+def has_ext(filename, *extensions):
+    for ext in extensions:
+        if filename.lower().endswith('.' + ext):
+            return True
+    return False
 
 @handle_errors
 def load_file(filename, add_source, verbose):
@@ -75,8 +78,8 @@ def load_file(filename, add_source, verbose):
 
     if has_ext(filename, "csv"):
         df = pd.read_csv(filename)
-    elif has_ext(filename, "xlsx"):
-        df = pd.read_excel(filename, engine="openpyxl")
+    elif has_ext(filename, "xlsx", "xls"):
+        df = pd.read_excel(filename)
     else:
         raise ValueError("Unsupported file type")
 
@@ -92,7 +95,7 @@ def load_file(filename, add_source, verbose):
 def main():
     usage_error, args = parse_args()
     for filename in args.file:
-        if not any(has_ext(filename, ext) for ext in ("csv", "xlsx")):
+        if not has_ext(filename, "csv", "xlsx", "xls"):
             usage_error(f"unsupported file: {filename}")
 
     def report(*status, **kwd):
