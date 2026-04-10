@@ -20,12 +20,12 @@ A tool that combines messy Excel/CSV files into a clean, unified sheet
 
 ## Installation
 
-- [Download latest version](https://github.com/helanabi/colcat/archive/refs/tags/v0.1.0.zip)
+- [Download the latest version](https://github.com/helanabi/colcat/archive/refs/tags/v0.1.0.zip)
 - `unzip colcat-0.1.0.zip`
 - `cd colcat-0.1.0`
 - `pip install -r requirements`
 - `chmod +x colcat.py`
-- Done (use `./colcat.py -h` for help)
+- Use `./colcat.py -h` for usage help
 
 ## Usage
 
